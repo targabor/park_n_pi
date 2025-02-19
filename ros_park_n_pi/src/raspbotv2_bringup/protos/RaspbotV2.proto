@@ -1,0 +1,373 @@
+#VRML_SIM R2025a utf8
+# license: Apache License 2.0
+# license url: http://www.apache.org/licenses/LICENSE-2.0
+# This is a proto file for Webots for the RaspbotV2
+# Extracted from: /home/gabor/Coding/msc_thesis/park_n_pi/webots_project/protos/Raspbot-V2.urdf
+
+PROTO RaspbotV2 [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "RaspbotV2"  # Is `Robot.name`.
+  field  SFString    controller      "void"       # Is `Robot.controller`.
+  field  MFString    controllerArgs  []           # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""           # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE        # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE         # Is `Robot.synchronization`.
+  field  SFBool      selfCollision   FALSE        # Is `Robot.selfCollision`.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    selfCollision IS selfCollision
+    children [
+      Shape {
+        appearance DEF base_link_material PBRAppearance {
+          baseColor 0.203922 0.203922 0.203922
+          roughness 1.000000
+          metalness 0
+        }
+        geometry DEF base_link Mesh {
+          url "../meshes/base_Link.stl"
+        }
+        castShadows FALSE
+      }
+      # Accelerometer (3-axis)
+      Accelerometer {
+        name "accelerometer"
+        translation 0 0 0.1  # Position the accelerometer (adjust as needed)
+        rotation 0 0 1 0
+        resolution 0.1        # Adjustable resolution
+      }
+
+      # Gyroscope (3-axis)
+      Gyro {
+        name "gyroscope"
+        translation 0 0 0.1  # Position the gyroscope (adjust as needed)
+        rotation 0 0 1 0
+        resolution 0.1        # Adjustable resolution
+      }
+
+      # Compass (Magnetometer - 3-axis)
+      Compass {
+        name "magnetometer"
+        translation 0 0 0.1  # Position the compass (adjust as needed)
+        rotation 0 0 1 0
+        resolution 0.1       # Adjustable resolution
+      }
+
+      # Distance Sensor (Front)
+      DistanceSensor {
+        name "front_distance_sensor"
+        translation 0.09 0 0.05
+        rotation 0 0 1 0
+        lookupTable [ 0     1000  0,
+                      0.1   1000  0.1,
+                      0.2    400  0.1,
+                      0.3     50  0.1,
+                      0.37    30  0 ]
+      }
+
+      # Camera (Front)
+      Camera {
+        name "front_camera"
+        translation 0.103 0 0.088
+        rotation 0 0 1 0
+        width 640
+        height 480
+        fieldOfView 1.2
+      }
+      # LiDaR on top
+      Lidar {
+        name "top_lidar"
+        translation 0 0 0.121
+        rotation 0 0 1 0
+        verticalFieldOfView 0.1  # Single-plane LIDAR (2D)
+        horizontalResolution 4000  # Matches real sensor
+        numberOfLayers 1  # Only 1 scanning layer
+        fieldOfView 6.283185  # Full 360° scanning
+        maxRange 8.0
+        minRange 0.1
+        noise 0.01  # ~1% noise for realism
+        type "rotating"
+        resolution 0.001  # 1mm precision
+        defaultFrequency 6  # Matches real-world default
+        minFrequency 2
+        maxFrequency 8
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 1.000000 0.000000
+          anchor 0.056600 0.066275 0.016250
+        }
+        device [
+          RotationalMotor {
+            name "l1_Joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "l1_Joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.056600 0.066275 0.016250
+          children [
+            Shape {
+              appearance DEF l1_Link_material PBRAppearance {
+                baseColor 0.968627 0.760784 0.000000
+                roughness 1.000000
+                metalness 0
+              }
+              geometry DEF l1_Link Mesh {
+                url "../meshes/l1_Link.stl"
+              }
+              castShadows FALSE
+            }
+          ]
+          name "l1_Link"
+          boundingObject USE l1_Link
+          physics Physics {
+            density -1
+            mass 0.062118
+            centerOfMass [ 0.000000 0.001151 -0.000000 ]
+            inertiaMatrix [
+              1.602104e-05 2.576906e-05 1.602112e-05
+              3.437855e-11 -9.026150e-12 1.350661e-11
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 1.000000 0.000000
+          anchor -0.060600 0.066275 0.016250
+        }
+        device [
+          RotationalMotor {
+            name "l2_Joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "l2_Joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.060600 0.066275 0.016250
+          children [
+            Shape {
+              appearance DEF l2_Link_material PBRAppearance {
+                baseColor 0.968627 0.760784 0.000000
+                roughness 1.000000
+                metalness 0
+              }
+              geometry DEF l2_Link Mesh {
+                url "../meshes/l2_Link.stl"
+              }
+              castShadows FALSE
+            }
+          ]
+          name "l2_Link"
+          boundingObject USE l2_Link
+          physics Physics {
+            density -1
+            mass 0.062118
+            centerOfMass [ 0.000000 0.001151 -0.000000 ]
+            inertiaMatrix [
+              1.602124e-05 2.576910e-05 1.602115e-05
+              -3.412799e-12 5.687784e-11 -2.191197e-11
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 -1.000000 0.000000
+          anchor 0.056600 -0.066275 0.016250
+        }
+        device [
+          RotationalMotor {
+            name "r1_Joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "r1_Joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.056600 -0.066275 0.016250
+          children [
+            Shape {
+              appearance DEF r1_Link_material PBRAppearance {
+                baseColor 0.968627 0.760784 0.000000
+                roughness 1.000000
+                metalness 0
+              }
+              geometry DEF r1_Link Mesh {
+                url "../meshes/r1_Link.stl"
+              }
+              castShadows FALSE
+            }
+          ]
+          name "r1_Link"
+          boundingObject USE r1_Link
+          physics Physics {
+            density -1
+            mass 0.062118
+            centerOfMass [ 0.000000 -0.001151 -0.000000 ]
+            inertiaMatrix [
+              1.602120e-05 2.576923e-05 1.602134e-05
+              -2.996251e-11 -2.408814e-11 -4.527507e-11
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 -1.000000 0.000000
+          anchor -0.060600 -0.066275 0.016250
+        }
+        device [
+          RotationalMotor {
+            name "r2_Joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "r2_Joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.060600 -0.066275 0.016250
+          children [
+            Shape {
+              appearance DEF r2_Link_material PBRAppearance {
+                baseColor 0.968627 0.760784 0.000000
+                roughness 1.000000
+                metalness 0
+              }
+              geometry DEF r2_Link Mesh {
+                url "../meshes/r2_Link.stl"
+              }
+              castShadows FALSE
+            }
+          ]
+          name "r2_Link"
+          boundingObject USE r2_Link
+          physics Physics {
+            density -1
+            mass 0.062118
+            centerOfMass [ 0.000000 -0.001151 0.000000 ]
+            inertiaMatrix [
+              1.602111e-05 2.576906e-05 1.602105e-05
+              -5.456444e-12 3.223709e-11 3.706051e-11
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 0.000000 1.000000
+          anchor 0.058000 0.000000 0.057500
+        }
+        device [
+          RotationalMotor {
+            name "arm1_Joint"
+            maxVelocity 1.0
+            minPosition -1.57
+            maxPosition 1.57
+            maxTorque 100.0
+          }
+          PositionSensor {
+            name "arm1_Joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.058000 0.000000 0.057500
+          children [
+            Shape {
+              appearance DEF arm1_Link_material PBRAppearance {
+                roughness 1.000000
+                metalness 0
+              }
+              geometry DEF arm1_Link Mesh {
+                url "../meshes/arm1_Link.stl"
+              }
+              castShadows FALSE
+            }
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 -1.000000 0.000000
+                anchor 0.016864 -0.018050 0.031459
+              }
+              device [
+                RotationalMotor {
+                  name "arm2_Joint"
+                  maxVelocity 1.0
+                  minPosition -0.349
+                  maxPosition 1.57
+                  maxTorque 100.0
+                }
+                PositionSensor {
+                  name "arm2_Joint_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.016864 -0.018050 0.031459
+                children [
+                  Shape {
+                    appearance DEF arm2_Link_material PBRAppearance {
+                      baseColor 0.298039 0.298039 0.298039
+                      roughness 1.000000
+                      metalness 0
+                    }
+                    geometry DEF arm2_Link Mesh {
+                      url "../meshes/arm2_Link.stl"
+                    }
+                    castShadows FALSE
+                  }
+                ]
+                name "arm2_Link"
+                boundingObject USE arm2_Link
+                physics Physics {
+                  density -1
+                  mass 0.013331
+                  centerOfMass [ 0.013568 0.018878 0.002592 ]
+                  inertiaMatrix [
+                    1.974242e-06 1.525009e-06 1.981472e-06
+                    2.119032e-09 2.612351e-07 4.390370e-09
+                  ]
+                }
+              }
+            }
+          ]
+          name "arm1_Link"
+          boundingObject USE arm1_Link
+          physics Physics {
+            density -1
+            mass 0.018576
+            centerOfMass [ 0.006836 -0.005659 0.010679 ]
+            inertiaMatrix [
+              2.313000e-06 1.414400e-06 1.767900e-06
+              -1.463800e-09 -2.690200e-07 -2.573700e-08
+            ]
+          }
+        }
+      }
+    ]
+    name IS name
+    boundingObject USE base_link
+    physics Physics {
+      density -1
+      mass 0.315737
+      centerOfMass [ 0.013209 0.000306 0.034566 ]
+      inertiaMatrix [
+        1.269307e-04 2.170286e-04 3.096376e-04
+        -1.935701e-07 -3.215976e-08 3.163868e-07
+      ]
+    }
+  }
+}
