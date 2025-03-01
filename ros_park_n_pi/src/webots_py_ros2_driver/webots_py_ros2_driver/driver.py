@@ -10,12 +10,13 @@ import tf2_ros
 class Raspbotv2RobotDriver:
     def init(self, webots_node, properties):
         self.__robot = webots_node.robot
+        timestep = int(self.__robot.getBasicTimeStep())
 
         self.acceleromter_ = self.__robot.getDevice("accelerometer")
-        self.acceleromter_.enable(32)
+        self.acceleromter_.enable(timestep)
 
         self.gyroscope_ = self.__robot.getDevice("gyroscope")
-        self.gyroscope_.enable(32)
+        self.gyroscope_.enable(timestep)
 
         self.front_left_motor_ = self.__robot.getDevice("l1_Joint")
         self.front_right_motor_ = self.__robot.getDevice("r1_Joint")
@@ -37,6 +38,7 @@ class Raspbotv2RobotDriver:
         self.velocity_x_ = 0.0
         self.velocity_y_ = 0.0
         self.orientation_ = np.array([0.0, 0.0, 0.0, 0.0])
+        self.theta_ = 0.0
 
         self.last_time_ = None
 
@@ -49,7 +51,7 @@ class Raspbotv2RobotDriver:
         self.tf_broadcast_ = tf2_ros.TransformBroadcaster(self.__node)
 
         self.imu_timer_ = self.__node.create_timer(0.1, self.publish_imu_)
-        self.odom_timer_ = self.__node.create_timer(0.1, self.publish_odom_)
+        self.odom_timer_ = self.__node.create_timer(0.05, self.publish_odom_)
 
         self.cmd_vel_subscription_ = self.__node.create_subscription(
             Twist, "cmd_vel", self.cmd_vel_callback_, 10
@@ -75,36 +77,42 @@ class Raspbotv2RobotDriver:
 
     def publish_odom_(self):
         current_time = self.__node.get_clock().now()
+
         if self.last_time_ is None:
             self.last_time_ = current_time
             return
 
         dt = (current_time - self.last_time_).nanoseconds / 1e9
-        dt = 1
         self.last_time_ = current_time
 
         if dt <= 0:
             return
 
-        acc = self.read_acceleromter_()
+        # Read IMU gyroscope data (angular velocity)
         gyro = self.read_gyroscope_()
-
-        acc_array = np.array([acc.x, acc.y, acc.z])
-
-        self.velocity_x_ += acc_array[0] * dt
-        self.velocity_y_ += acc_array[1] * dt
-
-        self.pose_x_ += self.velocity_x_ * dt
-        self.pose_y_ += self.velocity_y_ * dt
-
-        yaw_rate = gyro.z
+        yaw_rate = gyro.z  # Angular velocity in rad/s
         delta_yaw = yaw_rate * dt
 
-        theta = delta_yaw
-        qw = math.cos(theta / 2)
-        qz = math.sin(theta / 2)
+        # Update heading (theta_)
+        self.theta_ += delta_yaw
+
+        # Convert heading to quaternion
+        qw = math.cos(self.theta_ / 2)
+        qz = math.sin(self.theta_ / 2)
         self.orientation_ = np.array([0.0, 0.0, qz, qw])
 
+        # Integrate velocity to compute new position
+        delta_x = (
+            self.velocity_x_ * math.cos(self.theta_) - self.velocity_y_ * math.sin(self.theta_)
+        ) * dt
+        delta_y = (
+            self.velocity_x_ * math.sin(self.theta_) + self.velocity_y_ * math.cos(self.theta_)
+        ) * dt
+
+        self.pose_x_ += delta_x
+        self.pose_y_ += delta_y
+
+        # Prepare Odometry message
         odom_msg = Odometry()
         odom_msg.header.stamp = current_time.to_msg()
         odom_msg.header.frame_id = "odom"
@@ -121,12 +129,12 @@ class Raspbotv2RobotDriver:
 
         odom_msg.twist.twist.linear.x = self.velocity_x_
         odom_msg.twist.twist.linear.y = self.velocity_y_
-        odom_msg.twist.twist.linear.z = 0.0
+        odom_msg.twist.twist.angular.z = yaw_rate
 
         self.odom_publisher_.publish(odom_msg)
 
+        # Publish TF transform
         t = TransformStamped()
-
         t.header.stamp = current_time.to_msg()
         t.header.frame_id = "odom"
         t.child_frame_id = "base_link"
@@ -143,25 +151,20 @@ class Raspbotv2RobotDriver:
         self.tf_broadcast_.sendTransform(t)
 
     def cmd_vel_callback_(self, msg):
-        linear_x = msg.linear.x
-        linear_y = msg.linear.y
-        angular_z = msg.angular.z
+        self.velocity_x_ = msg.linear.x
+        self.velocity_y_ = msg.linear.y
+        self.angular_z_ = msg.angular.z  # Store angular velocity
 
-        L = 0.082915  # Distance between wheels (m)
+        # Mecanum wheel kinematics
+        L = 0.082915  # Half the distance between wheels (m)
 
-        # Calculate wheel speeds
-        V1 = linear_x - linear_y - angular_z * (L / 2)
-        V2 = linear_x + linear_y + angular_z * (L / 2)
-        V3 = linear_x + linear_y - angular_z * (L / 2)
-        V4 = linear_x - linear_y + angular_z * (L / 2)
+        # Compute wheel velocities
+        V1 = self.velocity_x_ - self.velocity_y_ - self.angular_z_ * L
+        V2 = self.velocity_x_ + self.velocity_y_ + self.angular_z_ * L
+        V3 = self.velocity_x_ + self.velocity_y_ - self.angular_z_ * L
+        V4 = self.velocity_x_ - self.velocity_y_ + self.angular_z_ * L
 
-        self.__node.get_logger().info(
-            f"Received command: linear_x={linear_x}, linear_y={linear_y}, angular_z={angular_z}"
-        )
-        self.__node.get_logger().info(
-            f"Calculated wheel speeds: V1={V1}, V2={V2}, V3={V3}, V4={V4}"
-        )
-        # Set wheel speeds
+        # Set wheel speeds in Webots
         self.front_left_motor_.setVelocity(V1)
         self.front_right_motor_.setVelocity(V2)
         self.rear_left_motor_.setVelocity(V3)

@@ -4,12 +4,14 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
 EXTERNPROTO "../protos/RaspbotV2.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/advertising_board/protos/AdvertisingBoard.proto"
 
 WorldInfo {
+  basicTimeStep 32
 }
 Viewpoint {
-  orientation 0.009599740340231366 0.9993773374926473 -0.033952647783457586 0.5511251971345605
-  position -7.462518025204899 0.20893441802051255 4.780213013182607
+  orientation -0.025384141685063855 0.999242053690088 0.029512090541472125 1.4215489885452395
+  position -2.053437004760243 0.8855708116393045 11.829647509474917
 }
 TexturedBackground {
 }
@@ -17,7 +19,107 @@ TexturedBackgroundLight {
 }
 RectangleArena {
   floorSize 8 8
+  wallHeight 0.3
+}
+AdvertisingBoard {
+  translation -0.558331 -2.13703 0
+  rotation 0 0 1 3.14159
+  name "advertising board(4)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation 0.15709 -2.0797 0
+  rotation 0 0 1 -1.5707953071795862
+  name "advertising board(1)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation 0.152805 -1.54447 0
+  rotation 0 0 1 -1.5707953071795862
+  name "advertising board(3)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation 0.131197 -2.66118 -3.9968e-14
+  rotation 0 0 1 -1.5707953071795862
+  name "advertising board(2)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
 }
 RaspbotV2 {
   controller "<extern>"
+}
+AdvertisingBoard {
+  translation 1.05753 -0.0439188 0
+  rotation 0 0 1 4.692820414042842e-06
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -0.365895 1.38271 8.88185e-16
+  rotation 0 0 1 -2.094395307179586
+  name "advertising board(5)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -3.1307 1.07143 2.66454e-15
+  rotation 0 0 1 -2.094395307179586
+  name "advertising board(7)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -2.10576 2.07302 2.66454e-15
+  rotation 0 0 1 -2.094395307179586
+  name "advertising board(8)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -2.29565 0.858983 2.66454e-15
+  rotation 0 0 1 2.61799
+  name "advertising board(6)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -1.24067 0.838329 2.66454e-15
+  rotation 0 0 1 -2.094395307179586
+  name "advertising board(9)"
+  displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
 }
