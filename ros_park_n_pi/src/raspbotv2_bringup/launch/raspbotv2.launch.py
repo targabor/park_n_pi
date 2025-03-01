@@ -14,11 +14,13 @@ def generate_launch_description():
         get_package_share_directory("raspbotv2_bringup"), "urdf", "RaspbotV2.urdf"
     )
 
+    ekf_config_path = os.path.join(
+        get_package_share_directory("raspbotv2_bringup"), "config", "ekf_config.yaml"
+    )
+
     webots = WebotsLauncher(
         world=os.path.join(
-            get_package_share_directory("raspbotv2_bringup"),
-            "webots_worlds",
-            "world.wbt",
+            get_package_share_directory("raspbotv2_bringup"), "webots_worlds", "world.wbt"
         )
     )
 
@@ -40,12 +42,28 @@ def generate_launch_description():
         parameters=[{"robot_description": Command(["cat ", urdf_path])}],
     )
 
+    robot_localization = Node(
+        package="robot_localization",
+        executable="ekf_node",
+        name="ekf_filter_node",
+        parameters=[ekf_config_path],
+    )
+
+    slam_toolbox = Node(
+        package="slam_toolbox",
+        executable="sync_slam_toolbox_node",
+        name="slam_toolbox",
+        parameters=[{"odom_frame": "odom", "map_frame": "map", "base_frame": "base_link"}],
+        remappings=[("/scan", "/RaspbotV2/top_lidar")],
+    )
+
     return LaunchDescription(
         [
             webots,
             raspbotv2_robot_driver,
             joint_state_publisher,
             robot_state_publisher,
+            slam_toolbox,
             launch.actions.RegisterEventHandler(
                 event_handler=launch.event_handlers.OnProcessExit(
                     target_action=webots,

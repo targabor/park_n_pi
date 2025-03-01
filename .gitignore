@@ -3,3 +3,4 @@ ros_park_n_pi/install
 ros_park_n_pi/log
 *.world.jpg
 *webots_project
+__pycache__

@@ -15,6 +15,11 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
+  <depend>robot_localization</depend>
+  <depend>joint_state_publisher</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>slam_toolbox</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

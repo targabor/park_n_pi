@@ -14,6 +14,7 @@ install(DIRECTORY
   urdf
   webots_worlds
   protos
+  config
   DESTINATION share/${PROJECT_NAME}
 )
 
