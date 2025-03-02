@@ -7,18 +7,18 @@ EXTERNPROTO "../protos/RaspbotV2.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/advertising_board/protos/AdvertisingBoard.proto"
 
 WorldInfo {
-  basicTimeStep 32
 }
 Viewpoint {
-  orientation -0.025384141685063855 0.999242053690088 0.029512090541472125 1.4215489885452395
-  position -2.053437004760243 0.8855708116393045 11.829647509474917
+  orientation -0.02538021184616374 0.9990973435420707 0.03406380738880474 1.2816646942836047
+  position -4.841812970028411 0.7437911370308607 15.561072201613422
 }
 TexturedBackground {
 }
 TexturedBackgroundLight {
 }
 RectangleArena {
-  floorSize 8 8
+  floorSize 5 6
+  floorTileSize 1 1
   wallHeight 0.3
 }
 AdvertisingBoard {
@@ -84,7 +84,7 @@ AdvertisingBoard {
   poleThickness 0.2
 }
 AdvertisingBoard {
-  translation -3.1307 1.07143 2.66454e-15
+  translation 1.5369 2.35687 8.88183e-16
   rotation 0 0 1 -2.094395307179586
   name "advertising board(7)"
   displayWidth 1
@@ -94,7 +94,7 @@ AdvertisingBoard {
   poleThickness 0.2
 }
 AdvertisingBoard {
-  translation -2.10576 2.07302 2.66454e-15
+  translation -0.351597 2.36913 8.88183e-16
   rotation 0 0 1 -2.094395307179586
   name "advertising board(8)"
   displayWidth 1
@@ -104,7 +104,7 @@ AdvertisingBoard {
   poleThickness 0.2
 }
 AdvertisingBoard {
-  translation -2.29565 0.858983 2.66454e-15
+  translation 0.828676 1.2803 4.4409e-15
   rotation 0 0 1 2.61799
   name "advertising board(6)"
   displayWidth 1

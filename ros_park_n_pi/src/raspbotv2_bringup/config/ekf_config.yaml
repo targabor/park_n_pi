@@ -6,7 +6,6 @@ ekf_filter_node:
     two_d_mode: true
     publish_tf: true
 
-    odom_frame: odom
     base_link_frame: base_link
     world_frame: map  
 
@@ -15,4 +14,4 @@ ekf_filter_node:
                   true, true, false,     # Orientation (Roll, Pitch, Yaw) -> Use all
                   false, false, false,    # Linear velocity (X, Y, Z) -> Estimate X, Y
                   false, false, true,   # Angular velocity (X, Y, Z) -> Use Z for yaw rate
-                  true, true, false]    # Linear acceleration (X, Y, Z) -> Use X, Y
+                  true, false, false]    # Linear acceleration (X, Y, Z) -> Use X, Y

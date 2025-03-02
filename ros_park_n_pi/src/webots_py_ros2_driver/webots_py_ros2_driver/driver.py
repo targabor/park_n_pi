@@ -5,6 +5,7 @@ from nav_msgs.msg import Odometry
 import numpy as np
 import math
 import tf2_ros
+from scipy.spatial.transform import Rotation as R
 
 
 class Raspbotv2RobotDriver:
@@ -39,6 +40,7 @@ class Raspbotv2RobotDriver:
         self.velocity_y_ = 0.0
         self.orientation_ = np.array([0.0, 0.0, 0.0, 0.0])
         self.theta_ = 0.0
+        self.prev_velocity_ = None
 
         self.last_time_ = None
 
@@ -68,11 +70,38 @@ class Raspbotv2RobotDriver:
         return Vector3(x=gyro_data[0], y=gyro_data[1], z=gyro_data[2])
 
     def publish_imu_(self):
+        now = self.__node.get_clock().now()
+        timestamp = now.to_msg()
+
         imu_msg = Imu()
-        imu_msg.header.stamp = self.__node.get_clock().now().to_msg()
+        imu_msg.header.stamp = timestamp
         imu_msg.header.frame_id = "raspbotv2_imu"
-        imu_msg.linear_acceleration = self.read_acceleromter_()
+
+        # Compute acceleration from velocity if previous data exists
+        if self.prev_velocity_ is not None and self.prev_time is not None:
+            dt = (now - self.prev_time).nanoseconds * 1e-9  # Convert ns to seconds
+            if dt > 0:  # Avoid division by zero
+                acceleration = (self.velocity_x_ - self.prev_velocity_) / dt
+            else:
+                acceleration = 0.0
+        else:
+            acceleration = 0.0  # No previous data available
+
+        # Store current values for next iteration
+        self.prev_velocity_ = self.velocity_x_
+        self.prev_time = now
+
+        # Fill IMU message
+        imu_msg.linear_acceleration.x = acceleration
+        imu_msg.linear_acceleration.y = 0.0
+        imu_msg.linear_acceleration.z = 0.0  # Assuming no vertical acceleration
         imu_msg.angular_velocity = self.read_gyroscope_()
+
+        # Optional: Add covariance
+        imu_msg.linear_acceleration_covariance = [0.02, 0, 0, 0, 0.02, 0, 0, 0, 0.02]
+        imu_msg.angular_velocity_covariance = [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]
+        imu_msg.orientation_covariance = [-1.0] * 9  # Unknown orientation
+
         self.imu_publisher_.publish(imu_msg)
 
     def publish_odom_(self):
@@ -95,11 +124,11 @@ class Raspbotv2RobotDriver:
 
         # Update heading (theta_)
         self.theta_ += delta_yaw
+        self.theta_ = (self.theta_ + np.pi) % (2 * np.pi) - np.pi  # Normalize theta to [-π, π]
 
-        # Convert heading to quaternion
-        qw = math.cos(self.theta_ / 2)
-        qz = math.sin(self.theta_ / 2)
-        self.orientation_ = np.array([0.0, 0.0, qz, qw])
+        # Compute quaternion using scipy
+        quat = R.from_euler("z", self.theta_).as_quat()  # [qx, qy, qz, qw]
+        self.orientation_ = quat
 
         # Integrate velocity to compute new position
         delta_x = (
@@ -109,8 +138,8 @@ class Raspbotv2RobotDriver:
             self.velocity_x_ * math.sin(self.theta_) + self.velocity_y_ * math.cos(self.theta_)
         ) * dt
 
-        self.pose_x_ += delta_x
-        self.pose_y_ += delta_y
+        self.pose_x_ += delta_x / 17
+        self.pose_y_ += delta_y / 17
 
         # Prepare Odometry message
         odom_msg = Odometry()
@@ -165,10 +194,10 @@ class Raspbotv2RobotDriver:
         V4 = self.velocity_x_ - self.velocity_y_ + self.angular_z_ * L
 
         # Set wheel speeds in Webots
-        self.front_left_motor_.setVelocity(V1)
-        self.front_right_motor_.setVelocity(V2)
-        self.rear_left_motor_.setVelocity(V3)
-        self.rear_right_motor_.setVelocity(V4)
+        self.front_left_motor_.setVelocity(min(V1, 10))
+        self.front_right_motor_.setVelocity(min(V2, 10))
+        self.rear_left_motor_.setVelocity(min(V3, 10))
+        self.rear_right_motor_.setVelocity(min(V4, 10))
 
     def step(self):
         rclpy.spin_once(self.__node, timeout_sec=0)
