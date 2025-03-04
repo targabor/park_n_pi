@@ -9,8 +9,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.02538021184616374 0.9990973435420707 0.03406380738880474 1.2816646942836047
-  position -4.841812970028411 0.7437911370308607 15.561072201613422
+  orientation 0.06925138351113487 0.9933510523621601 -0.09196701937533276 1.2972161770564585
+  position -2.981806209797746 0.18602087023628533 10.381705937355129
 }
 TexturedBackground {
 }
@@ -65,7 +65,7 @@ RaspbotV2 {
   controller "<extern>"
 }
 AdvertisingBoard {
-  translation 1.05753 -0.0439188 0
+  translation 1.70916 -0.0433729 0
   rotation 0 0 1 4.692820414042842e-06
   displayWidth 1
   displayHeight 1
@@ -118,6 +118,66 @@ AdvertisingBoard {
   rotation 0 0 1 -2.094395307179586
   name "advertising board(9)"
   displayWidth 1
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation 0.0492789 -0.526238 2.66454e-15
+  rotation 0 0 1 3.14159
+  name "advertising board(10)"
+  displayWidth 0.5
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -1 0 2.66454e-15
+  rotation 0 0 -1 -1.5707953071795862
+  name "advertising board(13)"
+  displayWidth 0.5
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -2 0 2.66454e-15
+  rotation 0 0 -1 -1.5707953071795862
+  name "advertising board(12)"
+  displayWidth 0.5
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -2 -1 2.66454e-15
+  rotation 0 0 -1 -1.5707953071795862
+  name "advertising board(15)"
+  displayWidth 0.5
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation -2 1 2.66454e-15
+  rotation 0 0 -1 -1.5707953071795862
+  name "advertising board(14)"
+  displayWidth 0.5
+  displayHeight 1
+  frameThickness 0.1
+  poleHeight 3
+  poleThickness 0.2
+}
+AdvertisingBoard {
+  translation 1.04928 -0.526238 2.66454e-15
+  rotation 0 0 1 3.14159
+  name "advertising board(11)"
+  displayWidth 0.5
   displayHeight 1
   frameThickness 0.1
   poleHeight 3

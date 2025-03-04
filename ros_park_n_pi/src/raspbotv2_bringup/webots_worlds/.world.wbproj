@@ -8,4 +8,4 @@ orthographicViewHeight: 1
 textFiles: -1
 globalOptionalRendering: ContactPoints::AllBoundingObjects::JointAxes::ConnectorAxes
 consoles: Console:All:All
-renderingDevicePerspectives: RaspbotV2:front_camera;1;0.895833;0;0
+renderingDevicePerspectives: RaspbotV2:front_camera;1;0.21875;0;0

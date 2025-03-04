@@ -19,6 +19,9 @@ class Raspbotv2RobotDriver:
         self.gyroscope_ = self.__robot.getDevice("gyroscope")
         self.gyroscope_.enable(timestep)
 
+        self.magnetometer_ = self.__robot.getDevice("magnetometer")
+        self.magnetometer_.enable(timestep)
+
         self.front_left_motor_ = self.__robot.getDevice("l1_Joint")
         self.front_right_motor_ = self.__robot.getDevice("r1_Joint")
         self.rear_left_motor_ = self.__robot.getDevice("l2_Joint")
@@ -39,10 +42,15 @@ class Raspbotv2RobotDriver:
         self.velocity_x_ = 0.0
         self.velocity_y_ = 0.0
         self.orientation_ = np.array([0.0, 0.0, 0.0, 0.0])
-        self.theta_ = 0.0
         self.prev_velocity_ = None
-
+        self.last_bearing_ = 0.0
         self.last_time_ = None
+        self.pose_theta_ = 0.0
+        self.prev_time = None
+
+        self.WHEEL_RADIUS = 0.015  # Radius of the wheels (m)
+        self.WHEEL_BASE_WIDTH = 0.13  # Distance between left and right wheels
+        self.WHEEL_BASE_LENGTH = 0.12  # Distance between front and rear wheels
 
         rclpy.init(args=None)
         self.__node = rclpy.create_node("raspbotv2_robot_driver", namespace="RaspbotV2")
@@ -68,6 +76,77 @@ class Raspbotv2RobotDriver:
     def read_gyroscope_(self):
         gyro_data = self.gyroscope_.getValues()
         return Vector3(x=gyro_data[0], y=gyro_data[1], z=gyro_data[2])
+
+    def read_magnetometer_(self):
+        mag_data = self.magnetometer_.getValues()
+
+        # Compute bearing (angle from north)
+        rad = math.atan2(mag_data[1], mag_data[0])  # atan2(y, x) gives correct heading
+        bearing = rad * 180.0 / np.pi  # Convert to degrees
+        bearing -= 90.0  # Adjust for Webots orientation
+        if bearing < 0:
+            bearing += 360.0  # Normalize to [0, 360]
+
+        return math.radians(bearing)
+
+    def calculate_mecanum_odometry(self, wheel_velocities, current_time):
+        """
+        Calculate robot odometry using Mecanum wheel kinematics
+
+        Args:
+            wheel_velocities (list): Velocities of [FL, FR, RL, RR] wheels
+            current_time (rclpy.time.Time): Current ROS time
+
+        Returns:
+            tuple: (delta_x, delta_y, delta_theta)
+        """
+        # Unpack wheel velocities (Front Left, Front Right, Rear Left, Rear Right)
+        fl_vel, fr_vel, rl_vel, rr_vel = wheel_velocities
+
+        # Time delta
+        if self.prev_time is None:
+            self.prev_time = current_time
+            return 0, 0
+
+        dt = (current_time - self.prev_time).nanoseconds / 1e9
+        self.prev_time = current_time
+
+        if dt <= 0:
+            return 0, 0
+
+        # Mecanum wheel inverse kinematics
+        # These constants can be adjusted based on your specific robot geometry
+        k1 = 1 / (2 * (self.WHEEL_BASE_LENGTH + self.WHEEL_BASE_WIDTH))
+
+        # Calculate linear and angular velocities
+        vx = self.WHEEL_RADIUS * (fl_vel + fr_vel + rl_vel + rr_vel) / 4
+        vy = self.WHEEL_RADIUS * (-fl_vel + fr_vel + rl_vel - rr_vel) / 4
+
+        # Integrate to get pose changes
+        delta_x = vx * math.cos(self.pose_theta_) - vy * math.sin(self.pose_theta_) * dt
+        delta_y = vx * math.sin(self.pose_theta_) + vy * math.cos(self.pose_theta_) * dt
+
+        SIMULATION_SCALE = 0.25
+
+        return delta_x * SIMULATION_SCALE, delta_y * SIMULATION_SCALE
+
+    def update_odometry(self, wheel_velocities, current_time):
+        """
+        Update robot pose based on wheel velocities
+
+        Args:
+            wheel_velocities (list): Velocities of [FL, FR, RL, RR] wheels
+            current_time (rclpy.time.Time): Current ROS time
+        """
+        # Calculate odometry deltas
+        delta_x, delta_y = self.calculate_mecanum_odometry(wheel_velocities, current_time)
+
+        # Update pose
+        self.pose_x_ += delta_x
+        self.pose_y_ += delta_y
+        self.pose_theta_ = -self.read_magnetometer_()
+
+        return self.pose_x_, self.pose_y_, self.pose_theta_
 
     def publish_imu_(self):
         now = self.__node.get_clock().now()
@@ -107,39 +186,14 @@ class Raspbotv2RobotDriver:
     def publish_odom_(self):
         current_time = self.__node.get_clock().now()
 
-        if self.last_time_ is None:
-            self.last_time_ = current_time
-            return
+        # Read wheel speeds
+        wheel_speeds = self.read_wheel_speeds_()
 
-        dt = (current_time - self.last_time_).nanoseconds / 1e9
-        self.last_time_ = current_time
+        # Update odometry
+        x, y, theta = self.update_odometry(wheel_speeds, current_time)
 
-        if dt <= 0:
-            return
-
-        # Read IMU gyroscope data (angular velocity)
-        gyro = self.read_gyroscope_()
-        yaw_rate = gyro.z  # Angular velocity in rad/s
-        delta_yaw = yaw_rate * dt
-
-        # Update heading (theta_)
-        self.theta_ += delta_yaw
-        self.theta_ = (self.theta_ + np.pi) % (2 * np.pi) - np.pi  # Normalize theta to [-π, π]
-
-        # Compute quaternion using scipy
-        quat = R.from_euler("z", self.theta_).as_quat()  # [qx, qy, qz, qw]
-        self.orientation_ = quat
-
-        # Integrate velocity to compute new position
-        delta_x = (
-            self.velocity_x_ * math.cos(self.theta_) - self.velocity_y_ * math.sin(self.theta_)
-        ) * dt
-        delta_y = (
-            self.velocity_x_ * math.sin(self.theta_) + self.velocity_y_ * math.cos(self.theta_)
-        ) * dt
-
-        self.pose_x_ += delta_x / 17
-        self.pose_y_ += delta_y / 17
+        # Convert euler angle to quaternion
+        quat = R.from_euler('z', theta).as_quat()
 
         # Prepare Odometry message
         odom_msg = Odometry()
@@ -147,35 +201,46 @@ class Raspbotv2RobotDriver:
         odom_msg.header.frame_id = "odom"
         odom_msg.child_frame_id = "base_link"
 
-        odom_msg.pose.pose.position.x = self.pose_x_
-        odom_msg.pose.pose.position.y = self.pose_y_
+        # Position
+        odom_msg.pose.pose.position.x = x
+        odom_msg.pose.pose.position.y = y
         odom_msg.pose.pose.position.z = 0.0
 
-        odom_msg.pose.pose.orientation.x = self.orientation_[0]
-        odom_msg.pose.pose.orientation.y = self.orientation_[1]
-        odom_msg.pose.pose.orientation.z = self.orientation_[2]
-        odom_msg.pose.pose.orientation.w = self.orientation_[3]
+        # Orientation
+        odom_msg.pose.pose.orientation.x = quat[0]
+        odom_msg.pose.pose.orientation.y = quat[1]
+        odom_msg.pose.pose.orientation.z = quat[2]
+        odom_msg.pose.pose.orientation.w = quat[3]
 
-        odom_msg.twist.twist.linear.x = self.velocity_x_
-        odom_msg.twist.twist.linear.y = self.velocity_y_
-        odom_msg.twist.twist.angular.z = yaw_rate
+        # Velocities (computed from wheel speeds)
+        odom_msg.twist.twist.linear.x = (
+            self.WHEEL_RADIUS
+            * (wheel_speeds[0] + wheel_speeds[1] + wheel_speeds[2] + wheel_speeds[3])
+            / 4
+        )
+        odom_msg.twist.twist.linear.y = (
+            self.WHEEL_RADIUS
+            * (-wheel_speeds[0] + wheel_speeds[1] + wheel_speeds[2] - wheel_speeds[3])
+            / 4
+        )
+        odom_msg.twist.twist.angular.z = self.compute_angular_velocity(wheel_speeds)
 
         self.odom_publisher_.publish(odom_msg)
 
-        # Publish TF transform
+        # Publish TF transform (similar to before)
         t = TransformStamped()
         t.header.stamp = current_time.to_msg()
         t.header.frame_id = "odom"
         t.child_frame_id = "base_link"
 
-        t.transform.translation.x = self.pose_x_
-        t.transform.translation.y = self.pose_y_
+        t.transform.translation.x = x
+        t.transform.translation.y = y
         t.transform.translation.z = 0.0
 
-        t.transform.rotation.x = self.orientation_[0]
-        t.transform.rotation.y = self.orientation_[1]
-        t.transform.rotation.z = self.orientation_[2]
-        t.transform.rotation.w = self.orientation_[3]
+        t.transform.rotation.x = quat[0]
+        t.transform.rotation.y = quat[1]
+        t.transform.rotation.z = quat[2]
+        t.transform.rotation.w = quat[3]
 
         self.tf_broadcast_.sendTransform(t)
 
@@ -185,7 +250,7 @@ class Raspbotv2RobotDriver:
         self.angular_z_ = msg.angular.z  # Store angular velocity
 
         # Mecanum wheel kinematics
-        L = 0.082915  # Half the distance between wheels (m)
+        L = 0.06  # Half the distance between wheels (m)
 
         # Compute wheel velocities
         V1 = self.velocity_x_ - self.velocity_y_ - self.angular_z_ * L
@@ -198,6 +263,28 @@ class Raspbotv2RobotDriver:
         self.front_right_motor_.setVelocity(min(V2, 10))
         self.rear_left_motor_.setVelocity(min(V3, 10))
         self.rear_right_motor_.setVelocity(min(V4, 10))
+
+    def read_wheel_speeds_(self):
+        return [
+            self.front_left_motor_.getVelocity(),
+            self.front_right_motor_.getVelocity(),
+            self.rear_left_motor_.getVelocity(),
+            self.rear_right_motor_.getVelocity(),
+        ]
+
+    def compute_angular_velocity(self, wheel_speeds):
+        """
+        Compute angular velocity from wheel speeds
+
+        Args:
+            wheel_speeds (list): Velocities of [FL, FR, RL, RR] wheels
+
+        Returns:
+            float: Angular velocity
+        """
+        k1 = 1 / (2 * (self.WHEEL_BASE_LENGTH + self.WHEEL_BASE_WIDTH))
+        fl_vel, fr_vel, rl_vel, rr_vel = wheel_speeds
+        return self.WHEEL_RADIUS * k1 * (-fl_vel + fr_vel - rl_vel + rr_vel)
 
     def step(self):
         rclpy.spin_once(self.__node, timeout_sec=0)
