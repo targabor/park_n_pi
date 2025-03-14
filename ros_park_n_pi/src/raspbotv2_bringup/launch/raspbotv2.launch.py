@@ -20,6 +20,8 @@ def generate_launch_description():
     ekf_config_path = os.path.join(package_share_dir, "config", "ekf_config.yaml")
 
     slam_params_path = os.path.join(package_share_dir, "config", "mapper_params_online_async.yaml")
+    
+    nav2_params = os.path.join(package_share_dir, "config", "nav2_params.yaml")
 
     webots = WebotsLauncher(world=os.path.join(package_share_dir, "webots_worlds", "world.wbt"))
 
@@ -56,6 +58,15 @@ def generate_launch_description():
         ),
         launch_arguments={"slam_params_file": slam_params_path, "use_sim_time": "false"}.items(),
     )
+    
+    nav2_bringup = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("nav2_bringup"), "launch", "nav2_bringup_launch.py"
+            )
+        ),
+        launch_arguments={"params_file": nav2_params}.items(),
+    )
 
     joy_detecor = Node(package="joy", executable="joy_node", name="joy_node")
 
@@ -69,8 +80,9 @@ def generate_launch_description():
             joint_state_publisher,
             robot_state_publisher,
             joy_detecor,
-            xbox_teleop,
+            #xbox_teleop,
             slam_toolbox,
+            #nav2_bringup,
             launch.actions.RegisterEventHandler(
                 event_handler=launch.event_handlers.OnProcessExit(
                     target_action=webots,
