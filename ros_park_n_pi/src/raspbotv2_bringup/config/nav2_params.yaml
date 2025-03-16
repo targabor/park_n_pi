@@ -5,7 +5,7 @@ amcl:
     alpha3: 0.2
     alpha4: 0.2
     alpha5: 0.2
-    base_frame_id: "base_link"
+    base_frame_id: "base_footprint"
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -36,7 +36,7 @@ amcl:
     z_max: 0.05
     z_rand: 0.5
     z_short: 0.05
-    scan_topic: scan
+    scan_topic: 'RaspbotV2/top_lidar'
 
 bt_navigator:
   ros__parameters:
@@ -52,18 +52,10 @@ bt_navigator:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
     navigate_through_poses:
       plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
-    # 'default_nav_through_poses_bt_xml' and 'default_nav_to_pose_bt_xml' are use defaults:
-    # nav2_bt_navigator/navigate_to_pose_w_replanning_and_recovery.xml
-    # nav2_bt_navigator/navigate_through_poses_w_replanning_and_recovery.xml
-    # They can be set here or via a RewrittenYaml remap from a parent launch file to Nav2.
-
-    # plugin_lib_names is used to add custom BT plugins to the executor (vector of strings).
-    # Built-in plugins are added automatically
-    # plugin_lib_names: []
-
     error_code_names:
       - compute_path_error_code
       - follow_path_error_code
+    transform_tolerance: 0.1
 
 
 controller_server:
@@ -79,43 +71,35 @@ controller_server:
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
     controller_plugins: ["FollowPath"]
     use_realtime_priority: false
-
-    # Progress checker parameters
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.5
       movement_time_allowance: 10.0
-    # Goal checker parameters
-    #precise_goal_checker:
-    #  plugin: "nav2_controller::SimpleGoalChecker"
-    #  xy_goal_tolerance: 0.25
-    #  yaw_goal_tolerance: 0.25
-    #  stateful: True
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.35
-      yaw_goal_tolerance: 0.50
+      xy_goal_tolerance: 0.1
+      yaw_goal_tolerance: 0.25
     FollowPath:
-      # Model Predictive Path Integral Controller
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 15
       model_dt: 0.2 # Set to the duration of the control frequency
       batch_size: 10000
-      vx_std: 0.2
-      vy_std: 0.2
-      wz_std: 0.4
-      vx_max: 0.5 # These acceleration and velocity parameters are where you should start tuning
-      vx_min: 0.0 # -0.35 is default
-      vy_max: 0.5
-      wz_max: 1.9
-      ax_max: 3.0
-      ax_min: -3.0
-      ay_max: 3.0
-      az_max: 3.5
+      vx_std: 0.2  # Increased from 0.1
+      vy_std: 0.2  # Increased from 0.1
+      wz_std: 0.4  # Increased from 0.2
+      vx_max: 0.5  # Reduced from 10.0
+      vx_min: 0.0  # Reduced from -10.0
+      vy_max: 0.5  # Reduced from 1.0
+      wz_max: 1.9  # Reduced from 20.0
+      ax_max: 3.0  # Reduced from 5.0
+      ax_min: -3.0  # Reduced from -5.0
+      ay_max: 3.0  # Reduced from 5.0 
+      az_max: 3.5  # Reduced from 7.5
+
       iteration_count: 1
-      prune_distance: 1.7
-      transform_tolerance: 0.1
+      prune_distance: 0.5
+      transform_tolerance: 0.5
       temperature: 0.3
       gamma: 0.015
       motion_model: "Omni"
@@ -156,24 +140,16 @@ controller_server:
         enabled: true
         cost_power: 1
         cost_weight: 14.0
-        max_path_occupancy_ratio: 0.05
-        trajectory_point_step: 4
         threshold_to_consider: 0.5
-        offset_from_furthest: 20
-        use_path_orientations: false
       PathAngleCritic:
         enabled: true
         cost_power: 1
         cost_weight: 2.0
-        offset_from_furthest: 4
         threshold_to_consider: 0.5
-        max_angle_to_furthest: 1.0
-        mode: 0
       PathFollowCritic:
         enabled: true
         cost_power: 1
         cost_weight: 5.0
-        offset_from_furthest: 5
         threshold_to_consider: 1.4
       PreferForwardCritic:
         enabled: true
@@ -184,21 +160,6 @@ controller_server:
         enabled: true
         cost_power: 1
         cost_weight: 10.0
-      # Option to replace Cost and use Obstacles instead
-      #ObstaclesCritic:
-      #  enabled: true
-      #  cost_power: 1
-      #  repulsion_weight: 1.5
-      #  critical_weight: 20.0
-      #  consider_footprint: false
-      #  collision_cost: 10000.0
-      #  collision_margin_distance: 0.05
-      #  near_goal_distance: 0.5
-      # VelocityDeadbandCritic:
-      #   enabled: true
-      #   cost_power: 1
-      #   cost_weight: 35.0
-      #   deadband_velocities: [0.05, 0.05, 0.05]
 
 local_costmap:
   local_costmap:
@@ -211,8 +172,8 @@ local_costmap:
       width: 5
       height: 5
       resolution: 0.05
-      robot_radius: 0.15  # Based on half of the robot's width (300mm / 2 = 150mm)
-      plugins: ["obstacle_layer", "denoise_layer", "inflation_layer"]
+      robot_radius: 0.1 
+      plugins: ["obstacle_layer", "range_sensor_layer", "denoise_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -225,6 +186,17 @@ local_costmap:
           clearing: True
           marking: True
           data_type: "LaserScan"
+      range_sensor_layer:
+        plugin: "nav2_costmap_2d::RangeSensorLayer"
+        enabled: False
+        topics: ["/RaspbotV2/front_distance_sensor"]
+        phi: 1.2
+        inflate_cone: 1.0
+        no_readings_timeout: 0.0
+        clear_threshold: 0.2
+        mark_threshold: 0.8
+        clear_on_max_reading: True
+        input_sensor_type: "ALL"
       denoise_layer:
         plugin: "nav2_costmap_2d::DenoiseLayer"
         enabled: true
@@ -234,10 +206,8 @@ local_costmap:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 2.58
         inflation_radius: 1.75
-      static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: True
-      always_send_full_costmap: True
+        inflate_unknown: False
+        inflate_around_unknown: False
 
 global_costmap:
   global_costmap:
@@ -246,10 +216,10 @@ global_costmap:
       publish_frequency: 5.0
       global_frame: map
       robot_base_frame: base_link
-      robot_radius: 0.15  # Robot width is 300mm
+      robot_radius: 0.1  # Robot width is 300mm
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      plugins: ["static_layer", "obstacle_layer", "range_sensor_layer", "inflation_layer"]
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -265,6 +235,17 @@ global_costmap:
           clearing: True
           marking: True
           data_type: "LaserScan"
+      range_sensor_layer:
+        plugin: "nav2_costmap_2d::RangeSensorLayer"
+        enabled: False
+        topics: ["/RaspbotV2/front_distance_sensor"]
+        phi: 1.2
+        inflate_cone: 1.0
+        no_readings_timeout: 0.0
+        clear_threshold: 0.2
+        mark_threshold: 0.8
+        clear_on_max_reading: True
+        input_sensor_type: "ALL"
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 2.58
@@ -276,7 +257,6 @@ map_saver:
     save_map_timeout: 5.0
     free_thresh_default: 0.25
     occupied_thresh_default: 0.65
-    map_subscribe_transient_local: True
 
 planner_server:
   ros__parameters:
@@ -295,7 +275,6 @@ smoother_server:
       plugin: "nav2_smoother::SimpleSmoother"
       tolerance: 1.0e-10
       max_its: 1000
-      do_refinement: True
 
 behavior_server:
   ros__parameters:
@@ -307,6 +286,8 @@ behavior_server:
     behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
     spin:
       plugin: "nav2_behaviors::Spin"
+      max_attempts: 2
+      retry_delay: 5.0
     backup:
       plugin: "nav2_behaviors::BackUp"
     drive_on_heading:
@@ -318,15 +299,16 @@ behavior_server:
     local_frame: odom
     global_frame: map
     robot_base_frame: base_link
-    transform_tolerance: 0.1
+    transform_timeout: 0.1
     simulate_ahead_time: 2.0
-    max_rotational_vel: 0.50
-    min_rotational_vel: 0.40
+    max_rotational_vel: 0.5
+    min_rotational_vel: 0.4
     rotational_acc_lim: 3.2
+    enable_stamped_cmd_vel: false
 
 waypoint_follower:
   ros__parameters:
-    loop_rate: 5
+    loop_rate: 2
     stop_on_failure: false
     action_server_result_timeout: 900.0
     waypoint_task_executor_plugin: "wait_at_waypoint"
@@ -338,20 +320,22 @@ waypoint_follower:
 velocity_smoother:
   ros__parameters:
     smoothing_frequency: 20.0
-    scale_velocities: False
+    scale_velocities: false
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.5, 2.5]
-    min_velocity: [-0.5, -0.5, -2.5]
+    max_velocity: [0.5, 0.5, 2.5]  
+    min_velocity: [-0.5, -0.5, -2.5]  
     max_accel: [0.3, 0.3, 3.2]
     max_decel: [-0.5, -0.5, -3.2]
     odom_topic: "odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
+    use_realtime_priority: false
+    enable_stamped_cmd_vel: false
 
 collision_monitor:
   ros__parameters:
-    base_frame_id: "base_link"
+    base_frame_id: "base_footprint"
     odom_frame_id: "odom"
     cmd_vel_in_topic: "cmd_vel_smoothed"
     cmd_vel_out_topic: "/RaspbotV2/cmd_vel"
@@ -369,15 +353,12 @@ collision_monitor:
       footprint_topic: "/local_costmap/published_footprint"
       time_before_collision: 1.2
       simulation_time_step: 0.1
-      min_points: 6
-      visualize: False
-      enabled: True
+      max_points: 1
+      visualize: True
     observation_sources: ["scan"]
     scan:
       type: "scan"
       topic: "/RaspbotV2/top_lidar"
-      min_height: 0.15
-      max_height: 2.0
       enabled: True
 
 docking_server:
@@ -434,7 +415,7 @@ docking_server:
       use_collision_detection: true
       costmap_topic: "/local_costmap/costmap_raw"
       footprint_topic: "/local_costmap/published_footprint"
-      transform_tolerance: 0.1
+      transform_tolerance: 0.5
       projection_time: 5.0
       simulation_step: 0.1
       dock_collision_threshold: 0.3

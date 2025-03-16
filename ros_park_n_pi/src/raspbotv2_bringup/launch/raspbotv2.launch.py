@@ -62,7 +62,7 @@ def generate_launch_description():
     nav2_bringup = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory("nav2_bringup"), "launch", "nav2_bringup_launch.py"
+                get_package_share_directory("nav2_bringup"), "launch", "bringup_launch.py"
             )
         ),
         launch_arguments={"params_file": nav2_params}.items(),
@@ -80,9 +80,9 @@ def generate_launch_description():
             joint_state_publisher,
             robot_state_publisher,
             joy_detecor,
-            #xbox_teleop,
+            xbox_teleop,
             slam_toolbox,
-            #nav2_bringup,
+            nav2_bringup,
             launch.actions.RegisterEventHandler(
                 event_handler=launch.event_handlers.OnProcessExit(
                     target_action=webots,

@@ -11,7 +11,7 @@ class XboxTeleopNode(Node):
         self.joy_subscription_ = self.create_subscription(Joy, '/joy', self.joy_callback, 10)
 
         self.MAX_SPEED = 0.25
-        self.MAX_ANGULAR_SPEED = 20
+        self.MAX_ANGULAR_SPEED = 10
 
         self.get_logger().info("Xbox teleop node initialized")
 

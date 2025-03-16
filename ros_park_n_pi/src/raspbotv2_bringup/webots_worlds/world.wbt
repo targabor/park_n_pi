@@ -124,7 +124,7 @@ AdvertisingBoard {
   poleThickness 0.2
 }
 AdvertisingBoard {
-  translation 0.0492789 -0.526238 2.66454e-15
+  translation 0.0581034 -0.73823 2.66454e-15
   rotation 0 0 1 3.14159
   name "advertising board(10)"
   displayWidth 0.5
