@@ -4,3 +4,4 @@ ros_park_n_pi/log
 *.world.jpg
 *webots_project
 __pycache__
+.vscode

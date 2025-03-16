@@ -15,6 +15,7 @@ install(DIRECTORY
   webots_worlds
   protos
   config
+  aruco_markers
   DESTINATION share/${PROJECT_NAME}
 )
 
