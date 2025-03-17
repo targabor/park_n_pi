@@ -1,6 +1,5 @@
 #VRML_SIM R2025a utf8
 
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
 EXTERNPROTO "../protos/RaspbotV2.proto"
@@ -9,10 +8,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.019645825313989996 0.13039304794212228 -0.9912677209493385 1.3452763458994728
-  position 0.47866060229509416 0.18389785663412894 0.14696093070736174
-}
-TexturedBackground {
+  orientation -0.00530876717743498 0.9897637402114752 -0.1426168137129958 1.0948706104296695
+  position -4.262178015810668 -1.2363491574286891 12.457761910520933
 }
 TexturedBackgroundLight {
 }
@@ -22,9 +19,22 @@ RectangleArena {
   wallHeight 0.3
 }
 AdvertisingBoard {
-  translation 0.504922 -1.02248 -2.66453e-15
-  rotation 0 0 -1 -1.5707953071795862
+  translation 0.577812 -0.948463 -2.66453e-15
+  rotation 0 0 1 -1.5707953071795862
   name "advertising board(16)"
+  frontTexture [
+    "../aruco_markers/4x4_1000-1.png"
+  ]
+  displayWidth 0.1
+  displayHeight 0.1
+  frameThickness 0.1
+  poleHeight 1
+  poleThickness 0.1
+}
+AdvertisingBoard {
+  translation 0.841656 1.29459 -2.66453e-15
+  rotation 0 0 1 -0.523595307179586
+  name "advertising board(17)"
   frontTexture [
     "../aruco_markers/4x4_1000-1.png"
   ]
