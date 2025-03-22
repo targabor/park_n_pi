@@ -5,3 +5,4 @@ ros_park_n_pi/log
 *webots_project
 __pycache__
 .vscode
+.venv

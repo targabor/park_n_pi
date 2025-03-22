@@ -21,6 +21,7 @@ setup(
         "console_scripts": [
             "raspbotv2_robot_driver = webots_py_ros2_driver.driver:main",
             "xbox_teleop = webots_py_ros2_driver.xbox_teleop:main",
+            "robot_zmq_interface = webots_py_ros2_driver.robot_zmq_interface:main",
         ]
     },
 )

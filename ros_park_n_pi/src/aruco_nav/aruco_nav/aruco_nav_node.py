@@ -148,7 +148,6 @@ class ArucoNavNode(Node):
             gray_image, self._aruco_dict, parameters=self._aruco_params
         )
         if ids is not None:
-
             # Estimate Pose
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                 corners, self._marker_size, self._camera_matrix, self._dist_coeffs
@@ -160,7 +159,8 @@ class ArucoNavNode(Node):
 
             # Publish TF
             for i, marker_id in enumerate(ids.flatten()):
-                self.publish_tf(marker_id, tvecs[i], rvecs[i])
+                if marker_id == 1:  # Only publish for marker 1
+                    self.publish_tf(marker_id, tvecs[i], rvecs[i])
 
     def publish_tf(self, marker_id, tvec, rvec):
         """Publish ArUco marker pose as TF transform relative to map frame"""

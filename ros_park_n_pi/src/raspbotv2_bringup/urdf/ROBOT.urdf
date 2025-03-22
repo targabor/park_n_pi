@@ -1,0 +1,337 @@
+<?xml version="1.0"?>
+<robot name="ROBOT_NAME">
+  <webots>
+    <plugin type="webots_py_ros2_driver.driver.Raspbotv2RobotDriver" />
+  </webots>
+  <link name="base_link">
+    <inertial>
+      <origin
+        xyz="0.013209067968915 0.000305835286849597 0.034565647785585"
+        rpy="0 0 0" />
+      <mass
+        value="0.315736522899678" />
+      <inertia
+        ixx="0.000126930677782624"
+        ixy="-1.93570093947537E-07"
+        ixz="-3.2159760519397E-08"
+        iyy="0.000217028578454845"
+        iyz="3.16386759318505E-07"
+        izz="0.000309637617387382" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://raspbotv2_bringup/meshes/base_Link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.203921568627451 0.203921568627451 0.203921568627451 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.06" rpy="1.885625 1.570791 -2.826762"/>
+      <geometry>
+        <box size="0.11 0.19 0.09"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="arm1_Joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="arm1_Link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.57" upper="1.57" velocity="1"/>
+    <origin xyz="0.058 0 0.0575" rpy="0 0 0"/>
+  </joint>
+  <link name="arm1_Link">
+    <inertial>
+      <origin
+        xyz="0.0068364 -0.0056586 0.010679"
+        rpy="0 0 0" />
+      <mass
+        value="0.018576" />
+      <inertia
+        ixx="2.313E-06"
+        ixy="-1.4638E-09"
+        ixz="-2.6902E-07"
+        iyy="1.4144E-06"
+        iyz="-2.5737E-08"
+        izz="1.7679E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://raspbotv2_bringup/meshes/arm1_Link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="arm2_Joint" type="revolute">
+    <parent link="arm1_Link"/>
+    <child link="arm2_Link"/>
+    <axis xyz="0 -1 0"/>
+    <limit effort="100" lower="-0.349" upper="1.57" velocity="1"/>
+    <origin xyz="0.016864 -0.01805 0.031459" rpy="0 0 0"/>
+  </joint>
+  <link name="arm2_Link">
+    <inertial>
+      <origin
+        xyz="0.0135675940851436 0.0188776198697847 0.00259174889479669"
+        rpy="0 0 0" />
+      <mass
+        value="0.0133313425891697" />
+      <inertia
+        ixx="1.97424244741481E-06"
+        ixy="2.11903184025424E-09"
+        ixz="2.61235056695239E-07"
+        iyy="1.52500945654191E-06"
+        iyz="4.39036974632E-09"
+        izz="1.98147244330846E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://raspbotv2_bringup/meshes/arm2_Link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.298039215686275 0.298039215686275 0.298039215686275 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="r2_Joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="r2_Link"/>
+    <axis xyz="0 -1 0"/>
+    <limit effort="10000" velocity="10"/>
+    <origin xyz="-0.0606 -0.066275 0.01625" rpy="0 0 0"/>
+  </joint>
+  <link name="r2_Link">
+    <inertial>
+      <origin
+        xyz="7.74810646891888E-08 -0.00115093470192544 2.52953823443036E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0621175854362522" />
+      <inertia
+        ixx="1.60211070245519E-05"
+        ixy="-5.45644401801277E-12"
+        ixz="3.22370881515308E-11"
+        iyy="2.57690598424951E-05"
+        iyz="3.70605115609868E-11"
+        izz="1.60210484479826E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://raspbotv2_bringup/meshes/r2_Link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.968627450980392 0.76078431372549 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.885625 1.570791 -2.826762"/>
+      <geometry>
+        <cylinder radius="0.029" length="0.03"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="r1_Joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="r1_Link"/>
+    <axis xyz="0 -1 0"/>
+    <limit effort="10000" velocity="10"/>
+    <origin xyz="0.0566 -0.066275 0.01625" rpy="0 0 0"/>
+  </joint>
+  <link name="r1_Link">
+    <inertial>
+      <origin
+        xyz="7.51903645040963E-08 -0.0011508831521476 -1.72979823520603E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0621184289730623" />
+      <inertia
+        ixx="1.60212009784984E-05"
+        ixy="-2.99625133669287E-11"
+        ixz="-2.40881432800737E-11"
+        iyy="2.57692344855104E-05"
+        iyz="-4.52750714768276E-11"
+        izz="1.60213367542239E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://raspbotv2_bringup/meshes/r1_Link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.968627450980392 0.76078431372549 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.885625 1.570791 -2.826762"/>
+      <geometry>
+        <cylinder radius="0.029" length="0.03"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="l2_Joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="l2_Link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10000" velocity="10"/>
+    <origin xyz="-0.0606 0.066275 0.01625" rpy="0 0 0"/>
+  </joint>
+  <link name="l2_Link">
+    <inertial>
+      <origin
+        xyz="2.28035580973618E-08 0.00115089560460579 -8.67083690958559E-09"
+        rpy="0 0 0" />
+      <mass
+        value="0.0621182459482163" />
+      <inertia
+        ixx="1.60212407380175E-05"
+        ixy="-3.41279855165358E-12"
+        ixz="5.68778362057485E-11"
+        iyy="2.57691020675976E-05"
+        iyz="-2.19119695751461E-11"
+        izz="1.60211497078259E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://raspbotv2_bringup/meshes/l2_Link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.968627450980392 0.76078431372549 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.885625 1.570791 -2.826762"/>
+      <geometry>
+        <cylinder radius="0.029" length="0.03"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="l1_Joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="l1_Link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10000" velocity="10"/>
+    <origin xyz="0.0566 0.066275 0.01625" rpy="0 0 0"/>
+  </joint>
+  <link name="l1_Link">
+    <inertial>
+      <origin
+        xyz="1.78446179673053E-08 0.00115093443907621 -8.02931999499545E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0621175903492224" />
+      <inertia
+        ixx="1.60210369337653E-05"
+        ixy="3.43785525584636E-11"
+        ixz="-9.02615043669717E-12"
+        iyy="2.5769061705676E-05"
+        iyz="1.3506611805838E-11"
+        izz="1.60211213285766E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://raspbotv2_bringup/meshes/l1_Link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.968627450980392 0.76078431372549 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.885625 1.570791 -2.826762"/>
+      <geometry>
+        <cylinder radius="0.029" length="0.03"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="top_lidar">
+  </link>
+  <joint name="base_link_top_lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="top_lidar"/>
+    <origin xyz="0 0 0.121" rpy="0 0 0"/>
+  </joint>
+  <link name="front_camera">
+  </link>
+  <joint name="base_link_front_camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="front_camera"/>
+    <origin xyz="0.103 0 0.088" rpy="-1.570796 0 -1.570796"/>
+  </joint>
+  <link name="front_distance_sensor">
+  </link>
+  <joint name="base_link_front_distance_sensor_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="front_distance_sensor"/>
+    <origin xyz="0.09 0 0.05" rpy="0 0 0"/>
+  </joint>
+  <link name="magnetometer">
+  </link>
+  <joint name="base_link_magnetometer_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="magnetometer"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="gyroscope">
+  </link>
+  <joint name="base_link_gyroscope_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="gyroscope"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="accelerometer">
+  </link>
+  <joint name="base_link_accelerometer_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="accelerometer"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_footprint"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+</joint>   
+<link name="base_footprint">
+</link>
+</robot>
