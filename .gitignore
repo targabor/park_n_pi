@@ -6,3 +6,6 @@ ros_park_n_pi/log
 __pycache__
 .vscode
 .venv
+ray_results
+ppo_raspbot*
+events.out.tfevents.*

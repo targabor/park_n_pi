@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>raspbotv2_bringup</name>
+  <name>raspbot_rl_interface</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="tar.gabor14@gmail.com">gabor</maintainer>
@@ -9,22 +9,13 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>webots_py_ros2_driver</exec_depend>
-  <exec_depend>webots_ros2_driver</exec_depend>
-
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
-  <depend>robot_localization</depend>
-  <depend>joint_state_publisher</depend>
-  <depend>robot_state_publisher</depend>
-  <depend>navigation2</depend>
-  <depend>nav2_bringup</depend>
-  <depend>nav2_simple_commander</depend>
-  <depend>slam_toolbox</depend>
-  <depend>raspbot_rl_env</depend>
+  <depend>geometry_msgs</depend>
+  <depend>rosidl_default_runtime</depend>
 
-
+  <member_of_group>rosidl_interface_packages</member_of_group>
   <export>
     <build_type>ament_cmake</build_type>
   </export>

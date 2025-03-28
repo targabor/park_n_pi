@@ -14,6 +14,15 @@ PROTO RaspbotV2 [
   field  SFBool      supervisor      FALSE        # Is `Robot.supervisor`.
   field  SFBool      synchronization TRUE         # Is `Robot.synchronization`.
   field  SFBool      selfCollision   TRUE        # Is `Robot.selfCollision`.
+  field  SFNode      physicsField    Physics {
+      density -1
+      mass 0.315737
+      centerOfMass [ 0.013209 0.000306 0.034566 ]
+      inertiaMatrix [
+        1.269307e-04 2.170286e-04 3.096376e-04
+        -1.935701e-07 -3.215976e-08 3.163868e-07
+      ]
+    }
 ]
 {
   Robot {
@@ -104,6 +113,7 @@ PROTO RaspbotV2 [
         jointParameters HingeJointParameters {
           axis 0.000000 1.000000 0.000000
           anchor 0.056600 0.066275 0.017250
+          dampingConstant 5.0  
         }
         device [
           RotationalMotor {
@@ -159,6 +169,7 @@ PROTO RaspbotV2 [
         jointParameters HingeJointParameters {
           axis 0.000000 1.000000 0.000000
           anchor -0.060600 0.066275 0.017250
+          dampingConstant 5.0  
         }
         device [
           RotationalMotor {
@@ -196,6 +207,8 @@ PROTO RaspbotV2 [
         jointParameters HingeJointParameters {
           axis 0.000000 1.000000 0.000000
           anchor 0.056600 -0.066275 0.017250
+          dampingConstant 5.0  
+
         }
         device [
           RotationalMotor {
@@ -233,6 +246,7 @@ PROTO RaspbotV2 [
         jointParameters HingeJointParameters {
           axis 0.000000 1.000000 0.000000
           anchor -0.060600 -0.066275 0.017250
+          dampingConstant 5.0  
         }
         device [
           RotationalMotor {
@@ -270,6 +284,7 @@ PROTO RaspbotV2 [
         jointParameters HingeJointParameters {
           axis 0.000000 0.000000 1.000000
           anchor 0.058000 0.000000 0.057500
+          dampingConstant 5.0  
         }
         device [
           RotationalMotor {
@@ -366,14 +381,6 @@ PROTO RaspbotV2 [
             }
         ]
     }
-    physics Physics {
-      density -1
-      mass 0.315737
-      centerOfMass [ 0.013209 0.000306 0.034566 ]
-      inertiaMatrix [
-        1.269307e-04 2.170286e-04 3.096376e-04
-        -1.935701e-07 -3.215976e-08 3.163868e-07
-      ]
-    }
+    physics IS physicsField 
   }
 }

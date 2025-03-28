@@ -11,6 +11,7 @@ from scipy.spatial.transform import Rotation as R
 class Raspbotv2RobotDriver:
     def init(self, webots_node, properties):
         self.__robot = webots_node.robot
+        self._robot_id = webots_node.robot.name.split("_")[-1]
         timestep = int(self.__robot.getBasicTimeStep())
 
         self.acceleromter_ = self.__robot.getDevice("accelerometer")
@@ -53,7 +54,10 @@ class Raspbotv2RobotDriver:
         self.WHEEL_BASE_LENGTH = 0.12  # Distance between front and rear wheels
 
         rclpy.init(args=None)
-        self.__node = rclpy.create_node("raspbotv2_robot_driver", namespace="RaspbotV2")
+
+        self.__node = rclpy.create_node(
+            f"raspbotv2_robot_driver_{self._robot_id}", namespace=f"RaspbotV2_{self._robot_id}"
+        )
 
         self.imu_publisher_ = self.__node.create_publisher(Imu, "imu", 10)
         self.odom_publisher_ = self.__node.create_publisher(Odometry, "odom", 10)
@@ -195,11 +199,16 @@ class Raspbotv2RobotDriver:
         # Convert euler angle to quaternion
         quat = R.from_euler('z', theta).as_quat()
 
+        # Retrieve robot namespace (assume it's set as a ROS 2 parameter or node name)
+        robot_namespace = self.__node.get_namespace().strip("/")
+        if robot_namespace == "":
+            robot_namespace = "default_robot"  # Fallback if no namespace is set
+
         # Prepare Odometry message
         odom_msg = Odometry()
         odom_msg.header.stamp = current_time.to_msg()
-        odom_msg.header.frame_id = "odom"
-        odom_msg.child_frame_id = "base_link"
+        odom_msg.header.frame_id = f"{robot_namespace}/odom"  # Unique odom frame
+        odom_msg.child_frame_id = f"{robot_namespace}/base_link"  # Unique base link
 
         # Position
         odom_msg.pose.pose.position.x = x
@@ -225,13 +234,14 @@ class Raspbotv2RobotDriver:
         )
         odom_msg.twist.twist.angular.z = self.compute_angular_velocity(wheel_speeds)
 
+        # Publish to a namespaced topic
         self.odom_publisher_.publish(odom_msg)
 
-        # Publish TF transform (similar to before)
+        # Publish TF transform
         t = TransformStamped()
         t.header.stamp = current_time.to_msg()
-        t.header.frame_id = "odom"
-        t.child_frame_id = "base_link"
+        t.header.frame_id = f"{robot_namespace}/odom"  # Unique odom frame
+        t.child_frame_id = f"{robot_namespace}/base_link"  # Unique base link
 
         t.transform.translation.x = x
         t.transform.translation.y = y

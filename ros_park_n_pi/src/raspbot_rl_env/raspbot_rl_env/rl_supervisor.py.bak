@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+import math
+import time
+from controller import Supervisor
+from rclpy.executors import MultiThreadedExecutor
+
+
+class MovingObject:
+    def __init__(
+        self,
+        supervisor,
+        def_name,
+        cycle_duration=5.0,
+        max_distance=2.0,
+        direction=[1.0, 0.0, 0.0],
+        delay=0.0,
+        movement_type="sine",
+    ):
+        """
+        Initialize a moving object with custom parameters
+
+        Parameters:
+        - supervisor: The Supervisor instance
+        - def_name: DEF name of the object in the world
+        - cycle_duration: Time in seconds for one direction (default: 5.0)
+        - max_distance: Maximum distance to move from initial position (default: 2.0)
+        - direction: Direction vector [x, y, z] (default: [1.0, 0.0, 0.0])
+        - delay: Delay in seconds before starting movement (default: 0.0)
+        - movement_type: Type of movement function ("sine", "linear", "bounce")
+        """
+        self.node = supervisor.getFromDef(def_name)
+        if self.node is None:
+            print(f"Could not find object: {def_name}")
+            self.valid = False
+            return
+
+        self.valid = True
+        self.translation_field = self.node.getField("translation")
+        self.initial_position = self.translation_field.getSFVec3f()
+        self.cycle_duration = cycle_duration
+        self.max_distance = max_distance
+        self.direction = direction
+        self.delay = delay
+        self.movement_type = movement_type
+        self.elapsed_time = -delay  # Negative time for delay
+
+    def update(self, dt):
+        """Update object position based on elapsed time"""
+        if not self.valid:
+            return
+
+        # Update elapsed time
+        self.elapsed_time += dt
+
+        # Don't move during delay period
+        if self.elapsed_time < 0:
+            return
+
+        # Calculate position in cycle (0 to 1 to 0)
+        cycle_position = (self.elapsed_time % (self.cycle_duration * 2)) / self.cycle_duration
+        if cycle_position > 1.0:
+            cycle_position = 2.0 - cycle_position  # Return phase
+
+        # Apply different movement patterns
+        if self.movement_type == "sine":
+            factor = math.sin(cycle_position * math.pi / 2)
+        elif self.movement_type == "linear":
+            factor = cycle_position
+        elif self.movement_type == "bounce":
+            factor = 4 * cycle_position * (1 - cycle_position)  # Quadratic ease-in-out
+        else:
+            factor = cycle_position  # Default to linear
+
+        # Calculate new position
+        new_position = [
+            self.initial_position[0] + self.direction[0] * self.max_distance * factor,
+            self.initial_position[1] + self.direction[1] * self.max_distance * factor,
+            self.initial_position[2] + self.direction[2] * self.max_distance * factor,
+        ]
+
+        # Update object position
+        self.translation_field.setSFVec3f(new_position)
+
+
+class WebotsSupervisorNode:
+    def __init__(self, webots_node, properties):
+        self.__robot = webots_node.robot  # Use Webots' provided robot instance
+        rclpy.init(args=None)
+        self.__node = rclpy.create_node('webots_supervisor', namespace='webots_supervisor')
+        self.logger = self.__node.get_logger()
+
+        # Log initialization
+        self.logger.info('Initializing Webots Supervisor Node')
+
+        # Get timestep
+        self.timestep = int(self.__robot.getBasicTimeStep())  # Use existing robot
+        self.dt = self.timestep / 1000.0  # Convert milliseconds to seconds
+        self.logger.info(f'Webots timestep: {self.timestep}ms ({1000/self.timestep:.2f}Hz)')
+
+        # Initialize robots collision groups (replace with actual function)
+        self.robots = self.setup_robots()
+
+        # Create moving objects (replace with actual function)
+        self.moving_objects = self.create_moving_objects()
+
+        # Create timer for simulation step
+        self.__node.create_timer(self.dt, self.step_simulation)  # Use __node.create_timer
+        self.logger.info('Node initialized successfully')
+
+    def setup_robots(self):
+        """Setup collision groups for robots"""
+        self.get_logger().info('Setting up robot collision properties')
+        robots = []
+        NUM_ROBOTS = 4
+
+        for i in range(1, NUM_ROBOTS + 1):
+            robot = self.supervisor.getFromDef(f"RaspbotV2_{i}")
+            if robot:
+                physics = robot.getField("physics").getSFNode()
+                if physics:
+                    physics.getField("collisionGroup").setSFFloat(i)  # Unique group per robot
+                    physics.getField("collisionMask").setSFFloat(0b1110)  # Ignore other robots
+                    self.get_logger().info(f'Configured collision for RaspbotV2_{i}')
+                robots.append(robot)
+            else:
+                self.get_logger().warn(f'Robot RaspbotV2_{i} not found')
+
+        self.get_logger().info(f'Found and configured {len(robots)} robots')
+        return robots
+
+    def create_moving_objects(self):
+        """Create and return a list of moving objects"""
+        self.get_logger().info('Creating moving objects')
+        moving_objects = [
+            # Object 1: Move along X-axis, 3.5 second cycle
+            MovingObject(
+                supervisor=self.supervisor,
+                def_name="BOX1",
+                cycle_duration=3.5,
+                max_distance=1.0,
+                direction=[0.2, 0.0, 0.0],
+            ),
+            # Object 2: Move diagonally, 5 second cycle
+            MovingObject(
+                supervisor=self.supervisor,
+                def_name="BOX2",
+                cycle_duration=5.0,
+                max_distance=1.0,
+                direction=[0.2, 0.2, 0.0],
+            ),
+            # Object 3: Move along Y-axis, 15 second cycle
+            MovingObject(
+                supervisor=self.supervisor,
+                def_name="BOX3",
+                cycle_duration=15.0,
+                max_distance=5.0,
+                direction=[0.0, 0.3, 0.0],
+            ),
+            # Object 4: Move along X-axis, 5 second cycle
+            MovingObject(
+                supervisor=self.supervisor,
+                def_name="BOX22",
+                cycle_duration=5.0,
+                max_distance=5.0,
+                direction=[0.2, 0.0, 0.0],
+            ),
+        ]
+
+        # Log the objects that were found and created successfully
+        valid_objects = sum(1 for obj in moving_objects if obj.valid)
+        self.get_logger().info(
+            f'Created {valid_objects} valid moving objects out of {len(moving_objects)} attempted'
+        )
+
+        return moving_objects
+
+    def step_simulation(self):
+        """Callback for timer to step the simulation and update objects"""
+        # Step the Webots simulation
+        if self.supervisor.step(self.timestep) == -1:
+            self.get_logger().error('Webots simulation has terminated')
+            self.destroy_node()
+            rclpy.shutdown()
+            return
+
+        # Update all objects
+        for obj in self.moving_objects:
+            obj.update(self.dt)
+
+    def step(self):
+        rclpy.spin_once(self.__node, timeout_sec=0)
+
+    def step_simulation(self):
+        self.__robot.step(self.timestep)  # Make sure simulation advances
