@@ -113,52 +113,25 @@ class WebotsSupervisorDriver:
         self.robot_nodes = {}
 
         self.last_used_coords = []
-
-        self.fixed_points = [
-            (-4.2, 4.44),
-            (-4.39, 3.13),
-            (-4.32, -4.3),
-            (-4.3, -4.0),
-            (-4.3, -3.8),
-            (-4.3, -3.0),
-            (-2.9, -2.8),
-            (-2.52, -1.2),
-            (-2.26, 0.02),
-            (-1.33, 1.39),
-            (-0.509, 3.26),
-            (1.08, 3.24),
-            (0.946, 1.94),
-            (2.6, 2.01),
-            (3.22, 3.06),
-            (4.08, 1.25),
-            (4.4, -1.03),
-            (4.19, -4.02),
-            (2.99, -3.69),
-            (1.61, -4.09),
-            (-0.117, -3.66),
-            (-0.0491, -2.5),
-            (1.43, -1.22),
+    
+        fixed_points = [
+            (-7.5, -7.5), (-7.5, -2.5), (-7.5, 2.5), (-7.5, 7.5),
+            (-2.5, -7.5), (-2.5, -2.5), (-2.5, 2.5), (-2.5, 7.5),
+            (2.5, -7.5),  (2.5, -2.5),  (2.5, 2.5),  (2.5, 7.5),
+            (7.5, -7.5),  (7.5, -2.5),  (7.5, 2.5),  (7.5, 7.5),
         ]
 
     def handle_teleport_request(self, request, response):
-        """Handle teleport request."""
-        # Debugging types
         if (request.x, request.y) in self.last_used_coords:
-            # Pick another random point, which wasnt used before
             random_point = random.choice(self.fixed_points)
             while random_point in self.last_used_coords:
                 random_point = random.choice(self.fixed_points)
             request.x, request.y = random_point
 
         self.last_used_coords.append((request.x, request.y))
-        # Crop last used coords to the last 10
         if len(self.last_used_coords) > 10:
             self.last_used_coords.pop(0)
 
-        print(f"request.x type: {type(request.x)}")
-        print(f"request.y type: {type(request.y)}")
-        print(f"request.z type: {type(request.z)}")
-        print(f"request.yaw type: {type(request.yaw)}")
         robot = self.__robot.getFromDef(request.robot_name)
         if robot is None:
             response.success = False
@@ -166,28 +139,17 @@ class WebotsSupervisorDriver:
             self.__node.get_logger().error(response.message)
             return response
 
-        # Set robot position
         translation_field = robot.getField("translation")
-        translation_field.setSFVec3f(
-            [request.x, request.y, 0.1]
-        )  # Add some z to avoid collision with the ground
+        translation_field.setSFVec3f([request.x, request.y, 0.1])
 
-        # Set robot orientation (Yaw to quaternion)
         rotation_field = robot.getField("rotation")
+        rotation_field.setSFRotation([0, 0, 1, request.yaw])  # yaw rotation around Z-axis
 
-        # Convert yaw (request.yaw) to quaternion
-        yaw = request.yaw  # Assuming yaw is in radians
-        w = math.cos(yaw / 2)
-        x = 0
-        y = 0
-        z = math.sin(yaw / 2)
-
-        # Set the new rotation using quaternion [x, y, z, w]
-        rotation_field.setSFRotation([x, y, z, w])
-        # Return a success response
         response.success = True
-        response.message = f"Successfully teleported robot '{request.robot_name}' to position [{request.x}, {request.y}, {request.z}] with yaw {request.yaw} radians."
-        self.__node.get_logger().info(response.message)
+        response.message = (
+            f"Successfully teleported robot '{request.robot_name}' to "
+            f"position [{request.x}, {request.y}, 0.1] with yaw {request.yaw:.2f} radians."
+        )
         return response
 
     def step_simulation(self):

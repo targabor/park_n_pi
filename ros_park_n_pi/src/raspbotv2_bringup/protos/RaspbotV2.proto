@@ -94,7 +94,7 @@ PROTO RaspbotV2 [
       # LiDaR on top
       Lidar {
         name "top_lidar"
-        translation 0 0 0.121
+        translation 0 0 0.115
         rotation 0 0 1 0
         verticalFieldOfView 0.1  # Single-plane LIDAR (2D)
         horizontalResolution 4000  # Matches real sensor

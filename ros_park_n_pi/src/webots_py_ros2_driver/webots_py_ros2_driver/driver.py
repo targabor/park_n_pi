@@ -71,7 +71,26 @@ class Raspbotv2RobotDriver:
             Twist, "cmd_vel", self.cmd_vel_callback_, 10
         )
 
+        # Let supervisor set the robots pose
+        self.pose_sub = self.__node.create_subscription(
+            Odometry, "pose_update", self.pose_callback_, 10
+        )
+
         self.__node.get_logger().info("Raspbotv2 robot driver initialized")
+
+    def pose_callback_(self, msg):
+        # Update the robot's pose based on the received message
+        self.pose_x_ = msg.pose.pose.position.x
+        self.pose_y_ = msg.pose.pose.position.y
+        self.pose_theta_ = msg.pose.pose.orientation.z
+        self.orientation_ = np.array(
+            [
+                msg.pose.pose.orientation.x,
+                msg.pose.pose.orientation.y,
+                msg.pose.pose.orientation.z,
+                msg.pose.pose.orientation.w,
+            ]
+        )
 
     def read_acceleromter_(self):
         acc_data = self.acceleromter_.getValues()

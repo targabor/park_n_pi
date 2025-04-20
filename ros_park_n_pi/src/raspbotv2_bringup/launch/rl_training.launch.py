@@ -82,9 +82,9 @@ def generate_launch_description():
         ),
     ]
 
-    # Declare launch argument
+    # Declare launch arguments
     num_robots_arg = DeclareLaunchArgument(
-        'num_robots', default_value='4', description='Number of robots to spawn in the simulation'
+        'num_robots', default_value='1', description='Number of robots to spawn in the simulation'
     )
 
     # Webots world file

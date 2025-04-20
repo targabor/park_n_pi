@@ -1,14 +1,15 @@
-import gymnasium as gym
+import os
 from raspbot_rl_env.env import RaspbotEnv
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv, VecNormalize
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+from stable_baselines3.common.callbacks import CheckpointCallback, BaseCallback
+from stable_baselines3.common.logger import configure
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import torch as th
 import torch.nn as nn
-import os
-from stable_baselines3.common.callbacks import BaseCallback
+import gymnasium as gym
 from collections import defaultdict
+
 
 class CustomFeatureExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: gym.spaces.Dict):
@@ -61,7 +62,7 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
         return self.combined_net(combined)
 
 
-
+# === Enhanced Logging Callback ===
 
 class EnhancedLoggingCallback(BaseCallback):
     def __init__(self, verbose=0):
@@ -112,37 +113,55 @@ class EnhancedLoggingCallback(BaseCallback):
             self.reward_components.clear()
 
 
+# === Env Factory ===
 def make_env(rank):
     def _init():
-        env = RaspbotEnv(namespace=f"RaspbotV2_{rank}")
-        return env
+        return RaspbotEnv(namespace=f"RaspbotV2_{rank}")
     return _init
 
 
 def main():
-    # GPU Check
+    # === Setup ===
     device = "cuda" if th.cuda.is_available() else "cpu"
     print(f"Training on device: {device}")
 
-    # Paths
     log_dir = "./logs"
+    tb_log = os.path.join(log_dir, "tensorboard", "PPO_15_0")
     checkpoint_dir = os.path.join(log_dir, "checkpoints")
-    eval_dir = os.path.join(log_dir, "eval")
+    checkpoint_name = "ppo_raspbot_checkpoint_1000000.zip"
+    vecnormalize_path = os.path.join(checkpoint_dir, "vecnormalize_1000000.pkl")
     os.makedirs(checkpoint_dir, exist_ok=True)
-    os.makedirs(eval_dir, exist_ok=True)
 
-    # Environment Setup
+    # === Training Parameters ===
+    start_timestep = 1_100_000
+    total_timesteps = 2_100_000
+
+
+    # === Load VecNormalize + Env ===
     num_envs = 6
     env_fns = [make_env(i) for i in range(1, num_envs + 1)]
-    vec_env = SubprocVecEnv(env_fns)
-    vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True)
+    raw_env = SubprocVecEnv(env_fns)
+    vec_env = VecNormalize.load(vecnormalize_path, raw_env)
+    vec_env.norm_obs = True
+    vec_env.norm_reward = True
+    vec_env.training = True
+    new_logger = configure(tb_log, ["stdout", "tensorboard"])
+    
+    # === Load model from checkpoint ===
+    old_model_path = os.path.join(checkpoint_dir, checkpoint_name)
+    # old_model = PPO.load(old_model_path, env=vec_env, device=device, custom_objects={"CustomFeatureExtractor": CustomFeatureExtractor})
+    old_model = PPO.load(
+        old_model_path,
+        device=device,
+        custom_objects={
+            "CustomFeatureExtractor": CustomFeatureExtractor,
+            "policy_kwargs": dict(features_extractor_class=CustomFeatureExtractor),
+        }
+    )
+    old_model.set_env(vec_env)
+    old_model.set_logger(new_logger)
 
-
-    # Learning Rate (Constant)
-    def constant_schedule(lr=3e-4):
-        return lambda _: lr
-
-    # Callbacks
+    # === Callbacks ===
     checkpoint_callback = CheckpointCallback(
         save_freq=50000,
         save_path=checkpoint_dir,
@@ -151,60 +170,19 @@ def main():
         save_vecnormalize=True,
     )
 
-    total_timesteps = 1_100_000
-    total_steps = 1_000_000
-
-    policy_kwargs = dict(
-        features_extractor_class=CustomFeatureExtractor,
-    )
-
-    
-
-    # PPO Model
-    model = PPO(
-        "MultiInputPolicy",
-        vec_env,
-        #policy_kwargs=policy_kwargs,
-        verbose=1,
-        learning_rate=3e-4, 
-        n_steps=2000,            # per environment if using VecEnv
-        batch_size=240, 
-        n_epochs=10, 
-        gamma=0.99, 
-        gae_lambda=0.95, 
-        clip_range=0.2, 
-        vf_coef=0.5, 
-        max_grad_norm=0.5, 
-        ent_coef=0.01,  # Increased entropy for better exploration
-        tensorboard_log=os.path.join(log_dir, "tensorboard"),
-        device=device,
-    )
-
-    # Training Loop
+    # === Training Loop ===
     checkpoint_interval = 100_000
-    
-    def calculate_entropy_coef(step):
-        initial_coef = 0.01
-        final_coef = 0.001
-        progress = step / total_steps
-        return initial_coef + progress * (final_coef - initial_coef)
+    for step in range(start_timestep, total_timesteps, checkpoint_interval):
+        print(f"Step {step} | Entropy Coef: {old_model.ent_coef}")
 
-    for i in range(0, total_timesteps, checkpoint_interval):
-        print(f"Step {i} | Entropy Coef: {model.ent_coef}")
-        model.ent_coef = calculate_entropy_coef(i / total_timesteps)
-        model.ent_coef_tensor = th.tensor(model.ent_coef, device=device)
-        model.learn(
+        old_model.learn(
             total_timesteps=checkpoint_interval,
             reset_num_timesteps=False,
             callback=[checkpoint_callback, EnhancedLoggingCallback()],
-            tb_log_name="PPO_27",
         )
-        model.save(os.path.join(checkpoint_dir, f"ppo_raspbot_checkpoint_{i}"))
-        vec_env.save(os.path.join(checkpoint_dir, f"vecnormalize_{i}.pkl"))
-        print(f"Checkpoint saved at timestep {i}")
-
-    model.save(os.path.join(checkpoint_dir, "ppo_raspbot_final"))
-    vec_env.save(os.path.join(checkpoint_dir, "vecnormalize_final.pkl"))
+        old_model.save(os.path.join(checkpoint_dir, f"ppo_raspbot_checkpoint_{step}"))
+        vec_env.save(os.path.join(checkpoint_dir, f"vecnormalize_{step}.pkl"))
+        print(f"Checkpoint saved at timestep {step}")
 
     vec_env.close()
 
