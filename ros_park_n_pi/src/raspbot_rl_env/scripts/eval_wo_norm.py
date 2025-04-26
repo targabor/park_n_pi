@@ -1,4 +1,5 @@
 # eval_policy.py
+import argparse
 import torch
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -8,25 +9,27 @@ def make_env():
     return RaspbotEnv(namespace="RaspbotV2_1")
 
 def main():
+    parser = argparse.ArgumentParser(description="Evaluate a trained PPO policy.")
+    parser.add_argument("model_path", type=str, help="Path to the saved model .zip file.")
+    parser.add_argument("--episodes", type=int, default=10, help="Number of evaluation episodes.")
+    args = parser.parse_args()
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Just a simple DummyVecEnv with no normalization
     vec_env = DummyVecEnv([make_env])
 
-    # Load model (trained without VecNormalize)
     model = PPO.load(
-        "logs/checkpoints/working_phase_1.zip",
+        args.model_path,
         env=vec_env,
         device=device,
     )
 
-    episodes = 10
     success = 0
     collisions = 0
     total_rewards = []
     total_steps = []
 
-    for i in range(episodes):
+    for i in range(args.episodes):
         obs = vec_env.reset()
         done = False
         ep_reward = 0
@@ -45,8 +48,8 @@ def main():
         total_rewards.append(ep_reward)
         total_steps.append(steps)
 
-    print(f"\nSuccess Rate: {success}/{episodes}")
-    print(f"Collision Rate: {collisions}/{episodes}")
+    print(f"\nSuccess Rate: {success}/{args.episodes}")
+    print(f"Collision Rate: {collisions}/{args.episodes}")
     print(f"Avg Reward: {sum(total_rewards)/len(total_rewards):.2f}")
     print(f"Avg Steps: {sum(total_steps)/len(total_steps):.2f}")
 

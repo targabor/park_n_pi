@@ -2,13 +2,13 @@ import gymnasium as gym
 from raspbot_rl_env.env import RaspbotEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, BaseCallback
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import torch as th
 import torch.nn as nn
 import os
-from stable_baselines3.common.callbacks import BaseCallback
 from collections import defaultdict
+import argparse
 
 
 # === Custom Feature Extractor ===
@@ -50,7 +50,7 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
         return self.combined_net(th.cat([self.lidar_net(lidar), self.goal_net(goal_info)], dim=1))
 
 
-# === Logging Callback ===
+# === Enhanced Logging Callback ===
 class EnhancedLoggingCallback(BaseCallback):
     def __init__(self, verbose=0):
         super().__init__(verbose)
@@ -86,15 +86,21 @@ class EnhancedLoggingCallback(BaseCallback):
             self.reward_components.clear()
 
 
-# === Env Factory ===
+# === Environment Factory ===
 def make_env(rank):
     def _init():
         return RaspbotEnv(namespace=f"RaspbotV2_{rank}")
     return _init
 
 
-# === Main Training ===
+# === Main Training Script ===
 def main():
+    parser = argparse.ArgumentParser(description="Train PPO on Raspbot RL environment.")
+    parser.add_argument("--num_envs", type=int, default=8, help="Number of parallel environments (robots).")
+    parser.add_argument("--total_timesteps", type=int, default=1_600_000, help="Total training timesteps.")
+    parser.add_argument("--tb_log_name", type=str, default="PPO_default", help="Tensorboard log folder name.")
+    args = parser.parse_args()
+
     device = "cuda" if th.cuda.is_available() else "cpu"
     print(f"Training on device: {device}")
 
@@ -102,23 +108,8 @@ def main():
     checkpoint_dir = os.path.join(log_dir, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    num_envs = 8
-    env_fns = [make_env(i) for i in range(1, num_envs + 1)]
-    vec_env = SubprocVecEnv(env_fns)  # ⛔ No VecNormalize
-
-    def constant_schedule(lr=3e-4):
-        return lambda _: lr
-
-    checkpoint_callback = CheckpointCallback(
-        save_freq=50_000,
-        save_path=checkpoint_dir,
-        name_prefix="ppo_raspbot",
-        save_replay_buffer=True,
-        save_vecnormalize=False,
-    )
-
-    total_timesteps = 1_600_000
-    total_steps = 1_500_000
+    env_fns = [make_env(i) for i in range(1, args.num_envs + 1)]
+    vec_env = SubprocVecEnv(env_fns)
 
     policy_kwargs = dict(
         features_extractor_class=CustomFeatureExtractor,
@@ -143,6 +134,16 @@ def main():
         device=device,
     )
 
+    checkpoint_callback = CheckpointCallback(
+        save_freq=50_000,
+        save_path=checkpoint_dir,
+        name_prefix="ppo_raspbot",
+        save_replay_buffer=True,
+        save_vecnormalize=False,
+    )
+
+    total_steps = args.total_timesteps - 100_000
+
     def calculate_entropy_coef(step):
         initial_coef = 0.01
         final_coef = 0.001
@@ -150,14 +151,14 @@ def main():
         return initial_coef + progress * (final_coef - initial_coef)
 
     checkpoint_interval = 100_000
-    for i in range(0, total_timesteps, checkpoint_interval):
+    for i in range(0, args.total_timesteps, checkpoint_interval):
         model.ent_coef = calculate_entropy_coef(i)
         model.ent_coef_tensor = th.tensor(model.ent_coef, device=device)
         model.learn(
             total_timesteps=checkpoint_interval,
             reset_num_timesteps=False,
             callback=[checkpoint_callback, EnhancedLoggingCallback()],
-            tb_log_name="PPO_31_no_norm",
+            tb_log_name=args.tb_log_name,
         )
         model.save(os.path.join(checkpoint_dir, f"ppo_raspbot_checkpoint_{i}"))
         print(f"Checkpoint saved at timestep {i}")
