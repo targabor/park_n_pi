@@ -1,7 +1,7 @@
-# 🚗 park_n_pi
-> 🎓 MSc Thesis Project - University of Pannonia
+# park_n_pi
+> MSc Thesis Project - University of Pannonia
 
-## 📝 Project Overview
+## Project Overview
 
 This project focuses on developing a reinforcement learning (RL)-based goal navigation system for an autonomous car platform using a Raspberry Pi 5 and the Raspbot V2 chassis.  
 The core objective is to enable the robot to reach designated goal poses efficiently and reliably using deep reinforcement learning techniques, serving as a foundation for future autonomous parking maneuvers.
@@ -10,7 +10,7 @@ All experiments and evaluations presented in this project were conducted within 
 
 Real-world deployment onto the Raspberry Pi 5 is planned for future extensions.
 
-## ✨ Features
+## Features
 
 - PPO-based reinforcement learning policy (Stable-Baselines3)
 - ROS 2 Jazzy full simulation integration
@@ -20,7 +20,7 @@ Real-world deployment onto the Raspberry Pi 5 is planned for future extensions.
 - TensorBoard support for training monitoring
 - Modular architecture supporting future real-world deployment
 
-## 📁 Project Structure
+## Project Structure
 
 ```plaintext
 park_n_pi/
@@ -45,43 +45,43 @@ park_n_pi/
 └── LICENSE
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 First, build the Docker image:
 
-```
+```bash
 docker build -f docker/Dockerfile -t park_n_pi_docker .
 ```
 
 Then start the container using Docker Compose:
 
-```
+```bash
 cd docker
 docker compose up -d
 ```
 
 Enter the container:
 
-```
+```bash
 docker exec -it park_n_pi_dev bash
 ```
 
 Inside the container, launch the Webots simulation and ROS2 nodes:
 
-```
+```bash
 ros2 launch raspbotv2_bringup rl_training.launch.py num_robots:=8
 ```
 
 Open a new terminal and connect again to the container:
 
-```
+```bash
 docker exec -it park_n_pi_dev bash
 cd src/park_n_pi/ros_park_n_pi/src/raspbot_rl_env/scripts/
 python3 run_wo_vecenv.py --num_envs 8 --total_timesteps 1_500_000 --tb_log_name RunName
 ```
 
 This starts the reinforcement learning training loop!
-## ⚙️ Usage
+## Usage
 
 - Simulation and ROS2 nodes start automatically.
 
@@ -91,19 +91,19 @@ This starts the reinforcement learning training loop!
 
 Stopping everything:
 
-```
+```bash
 docker compose down
 ```
 
 Rebuilding if needed:
-```
+```bash
 docker compose down
 docker compose build --no-cache
 docker compose up -d
 ```
 
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 - Docker
 
@@ -117,5 +117,5 @@ docker compose up -d
 
 - Gymnasium
 
-## 📜 License
+## License
 This project is licensed under the MIT License. See the [LICENSE](https://github.com/targabor/park_n_pi/blob/main/LICENSE) file for details.
